@@ -1,5 +1,6 @@
 // ==UserScript==
-// @name         ציטוט מהיר לג'מיני
+// @name         Fast quote for Gemini
+// @name:he      ציטוט מהיר לג'מיני
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  ציטוט טקסט מסומן ישירות לתיבת הצ'אט של ג'מיני והצבת הסמן בסוף
