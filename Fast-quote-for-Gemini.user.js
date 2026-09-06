@@ -5,6 +5,8 @@
 // @description  ציטוט טקסט מסומן ישירות לתיבת הצ'אט של ג'מיני והצבת הסמן בסוף
 // @author       I believe (https://mitmachim.top/user/i-believe)
 // @match        https://gemini.google.com/*
+// @updateURL    https://raw.githubusercontent.com/ILoveBlife/Scripts-for-tampermonkey/main/Fast-quote-for-Gemini.user.js
+// @downloadURL  https://raw.githubusercontent.com/ILoveBlife/Scripts-for-tampermonkey/main/Fast-quote-for-Gemini.user.js
 // @grant        GM_addStyle
 // @run-at       document-end
 // ==/UserScript==
