@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ייצוא שרשורים מג'מיני וצ'אט GPT - פרסמתי במתמחים טופ
+// @name         ייצוא שרשורים מג'מיני וצ'אט GPT
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  ייצוא שרשורי שיחות מ-ChatGPT ו-Gemini לקובץ טקסט מסודר וקריא
