@@ -1,5 +1,6 @@
 // ==UserScript==
-// @name         ייצוא שרשורים מג'מיני וצ'אט GPT
+// @name         Gemini & ChatGPT Thread Exporter
+// @name:he      יצוא שיחות מג'מיני ו-ChatGPT
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  ייצוא שרשורי שיחות מ-ChatGPT ו-Gemini לקובץ טקסט מסודר וקריא
