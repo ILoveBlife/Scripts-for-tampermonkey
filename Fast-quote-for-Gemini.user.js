@@ -2,8 +2,8 @@
 // @name         Fast quote for Gemini
 // @name:he      ציטוט מהיר לג'מיני
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  ציטוט טקסט מסומן ישירות לתיבת הצ'אט של ג'מיני והצבת הסמן בסוף
+// @version      1.1
+// @description  ציטוט טקסט מסומן ישירות לתיבת הצ'אט של ג'מיני
 // @author       I believe (https://mitmachim.top/user/i-believe)
 // @match        https://gemini.google.com/*
 // @updateURL    https://raw.githubusercontent.com/ILoveBlife/Scripts-for-tampermonkey/main/Fast-quote-for-Gemini.user.js
@@ -27,10 +27,11 @@
             font-family: sans-serif; font-weight: bold;
             border: 1px solid #1a73e8;
             user-select: none;
+            transition: opacity 0.1s ease;
         }
         #gh-quote-popup.visible { display: block !important; }
         @media (prefers-color-scheme: dark) {
-            #gh-quote-popup { background: #303134; color: #e8eaed; }
+            #gh-quote-popup { background: #303134; color: #e8eaed; border-color: #8ab4f8; }
         }
     `);
 
@@ -48,16 +49,33 @@
     quotePopup.innerText = '💬 צטט לצ\'אט';
     document.body.appendChild(quotePopup);
 
-    // 4. זיהוי סימון הטקסט והצגת הפופ-אפ
-    document.addEventListener('mouseup', (e) => {
+    // פונקציית עזר להצבת הפופ-אפ בתוך גבולות המסך
+    function positionPopup(x, y) {
+        const popupWidth = 120;
+        const popupHeight = 40;
+        
+        let finalX = Math.min(Math.max(10, x), window.innerWidth - popupWidth);
+        let finalY = y - popupHeight;
+        if (finalY < 10) finalY = y + 20;
+
+        quotePopup.style.left = finalX + 'px';
+        quotePopup.style.top = finalY + 'px';
+        quotePopup.classList.add('visible');
+    }
+
+    // 4. זיהוי סימון הטקסט והצגת הפופ-אפ (עכבר ומקלדת)
+    function handleSelectionCheck(e) {
         const sel = window.getSelection();
         const text = sel ? sel.toString().trim() : '';
 
-        if (text.length > 2) {
-            const topPos = Math.max(10, e.clientY - 40);
-            quotePopup.style.left = e.clientX + 'px';
-            quotePopup.style.top = topPos + 'px';
-            quotePopup.classList.add('visible');
+        if (text.length > 2 && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            
+            const posX = e.clientX || (rect.left + rect.width / 2);
+            const posY = e.clientY || rect.top;
+            
+            positionPopup(posX, posY);
         } else {
             setTimeout(() => {
                 const currentSel = window.getSelection();
@@ -66,17 +84,28 @@
                 }
             }, 150);
         }
+    }
+
+    document.addEventListener('mouseup', handleSelectionCheck);
+    document.addEventListener('keyup', (e) => {
+        if (e.shiftKey) handleSelectionCheck(e);
     });
 
-    // 5. לוגיקת הציטוט וניהול הסמן בעת לחיצה
+    // 5. לוגיקת הציטוט, ניהול הסמן וגלילה לסוף
     quotePopup.onmousedown = (e) => {
         e.preventDefault();
         const sel = window.getSelection();
-        const text = sel ? sel.toString().trim() : '';
+        const rawText = sel ? sel.toString().trim() : '';
         const editor = getEditor();
 
-        if (editor && text) {
-            const formattedText = `> ${text}\n\n`;
+        if (editor && rawText) {
+            // הוספת > בתחילת כל שורה
+            const quotedLines = rawText
+                .split('\n')
+                .map(line => `> ${line.trim()}`)
+                .join('\n');
+            
+            const formattedText = `${quotedLines}\n\n`;
 
             editor.focus();
 
@@ -88,25 +117,36 @@
             selection.removeAllRanges();
             selection.addRange(range);
 
-            // הזרקת הטקסט מול ה-State הפנימי של העורך
+            // הזרקת הטקסט
             const success = document.execCommand('insertText', false, formattedText);
 
-            // חלופה למקרה של חסימה
+            // מנגנון גיבוי במקרה של חסימה
             if (!success) {
                 editor.innerText += formattedText;
                 editor.dispatchEvent(new Event('input', { bubbles: true }));
             }
 
-            // הצבת הסמן בסוף לאחר סיום הרנדור של ג'מיני
+            // הצבת הסמן בסוף וגלילה למטה
             setTimeout(() => {
                 editor.focus();
+                
+                // קביעת מיקום הסמן בסוף
                 const finalRange = document.createRange();
                 const finalSel = window.getSelection();
                 finalRange.selectNodeContents(editor);
                 finalRange.collapse(false);
                 finalSel.removeAllRanges();
                 finalSel.addRange(finalRange);
-            }, 20);
+
+                // גלילת תיבת הטקסט הפנימית לסוף
+                editor.scrollTop = editor.scrollHeight;
+                if (editor.parentElement) {
+                    editor.parentElement.scrollTop = editor.parentElement.scrollHeight;
+                }
+
+                // גלילת הדף כדי לוודא שתיבת הקלט נראית על המסך
+                editor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 30);
 
             if (sel) sel.removeAllRanges();
             quotePopup.classList.remove('visible');
