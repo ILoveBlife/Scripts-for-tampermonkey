@@ -16,7 +16,7 @@
   "use strict";
 
   /* ---------------------------------------------------------------------- */
-  /* הזרקת עיצוב ה-CSS לעמוד                                                */
+  /* הזרקת עיצוב ה-CSS לעמוד                                               */
   /* ---------------------------------------------------------------------- */
   const style = document.createElement("style");
   style.textContent = `
@@ -82,10 +82,10 @@
   /* ---------------------------------------------------------------------- */
   const MESSAGE_BODY_SELECTOR = ".a3s.aiL, .a3s";
   const OPEN_MESSAGE_CONTAINER_SELECTOR = ".adn.ads, .gs";
+  const NON_USER_CONTENT_SELECTOR = ".gmail_signature, div.gmail_quote, .gmail_extra";
 
   let floatBtn = null;
   let currentSelectionText = "";
-  let currentSelectionRange = null;
   let currentMessageContainer = null;
   let lastComposeRange = null;
   let lastComposeBody = null;
@@ -134,14 +134,18 @@
 
   function rememberComposeCaret(selection) {
     if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-    const node = range.commonAncestorContainer;
-    const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-    if (!el) return;
-    const body = getEditableBodies().find((b) => b.contains(el));
-    if (body) {
-      lastComposeBody = body;
-      lastComposeRange = range.cloneRange();
+    try {
+      const range = selection.getRangeAt(0);
+      const node = range.commonAncestorContainer;
+      const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      if (!el) return;
+      const body = getEditableBodies().find((b) => b.contains(el));
+      if (body) {
+        lastComposeBody = body;
+        lastComposeRange = range.cloneRange();
+      }
+    } catch (err) {
+      // Ignore range extraction errors during fast selections
     }
   }
 
@@ -151,7 +155,6 @@
 
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
       currentSelectionText = "";
-      currentSelectionRange = null;
       currentMessageContainer = null;
       hideButton();
       return;
@@ -163,12 +166,16 @@
       return;
     }
 
-    const range = selection.getRangeAt(0);
+    let range;
+    try {
+      range = selection.getRangeAt(0);
+    } catch (e) {
+      hideButton();
+      return;
+    }
+
     const anchorNode = range.commonAncestorContainer;
-    const anchorEl =
-      anchorNode.nodeType === Node.TEXT_NODE
-        ? anchorNode.parentElement
-        : anchorNode;
+    const anchorEl = anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode;
 
     const bodyEl = anchorEl ? anchorEl.closest(MESSAGE_BODY_SELECTOR) : null;
     if (!bodyEl) {
@@ -177,9 +184,7 @@
     }
 
     currentSelectionText = text;
-    currentSelectionRange = range.cloneRange();
-    currentMessageContainer =
-      bodyEl.closest(OPEN_MESSAGE_CONTAINER_SELECTOR) || bodyEl;
+    currentMessageContainer = bodyEl.closest(OPEN_MESSAGE_CONTAINER_SELECTOR) || bodyEl;
 
     const rect = range.getBoundingClientRect();
     if (rect && (rect.width || rect.height)) {
@@ -211,8 +216,9 @@
 
   /* חילוץ שם השולח מהודעת הג'ימייל הנוכחית */
   function getSenderName(messageContainer) {
-    if (!messageContainer) return "";
-    // חיפוש אלמנט השולח הטיפוסי בג'ימייל (למשל span עם כותרת או שם השולח)
+    if (!messageContainer) return "השולח/ת";
+    
+    // ניסיון ראשון: חיפוש רכיב השולח הסטנדרטי בג'ימייל
     const senderEl = messageContainer.closest('.adn')?.querySelector('.gD') ||
                      messageContainer.querySelector('.gD') ||
                      messageContainer.closest('[role="region"]')?.querySelector('span[name]');
@@ -221,7 +227,7 @@
       return senderEl.getAttribute('name') || senderEl.textContent.trim();
     }
 
-    // ניסיון גיבוי לחילוץ מחלקות נוספות של שמות בג'ימייל
+    // ניסיון שני: גיבוי למחלקות חלופיות בג'ימייל
     const fallbackEl = messageContainer.closest('.adn')?.querySelector('.Hn') ||
                        messageContainer.closest('.iiwrap')?.previousElementSibling?.querySelector('.gD');
     if (fallbackEl) {
@@ -238,7 +244,9 @@
     const senderName = getSenderName(currentMessageContainer);
 
     hideButton();
-    window.getSelection().removeAllRanges();
+    try {
+      window.getSelection().removeAllRanges();
+    } catch (e) {}
 
     const openCompose = findOpenComposeBody();
     if (openCompose) {
@@ -268,9 +276,7 @@
 
     if (lastComposeBody && editables.includes(lastComposeBody)) return lastComposeBody;
 
-    const thread = currentMessageContainer
-      ? currentMessageContainer.closest('[role="main"]')
-      : null;
+    const thread = currentMessageContainer ? currentMessageContainer.closest('[role="main"]') : null;
     if (thread) {
       const inThread = editables.filter((el) => thread.contains(el));
       if (inThread.length) return inThread[inThread.length - 1];
@@ -367,14 +373,11 @@
     return /[\u0590-\u05FF\u0600-\u06FF]/.test(str);
   }
 
-  const NON_USER_CONTENT_SELECTOR = ".gmail_signature, div.gmail_quote, .gmail_extra";
-
   function buildQuoteHtml(quotedText, senderName) {
     const escapedText = escapeHtml(quotedText).replace(/\n/g, "<br>");
     const escapedSender = escapeHtml(senderName);
     const rtl = containsRtl(quotedText);
 
-    // עיצוב מקצועי ויוקרתי
     const borderStyle = rtl
       ? "border-right: 3px solid #1a73e8; margin: 8px 4px 8px 0px; padding: 8px 14px 8px 0px;"
       : "border-left: 3px solid #1a73e8; margin: 8px 0px 8px 4px; padding: 8px 0px 8px 14px;";
@@ -401,16 +404,22 @@
       lastComposeRange &&
       composeBody.contains(lastComposeRange.commonAncestorContainer)
     ) {
-      range = lastComposeRange.cloneRange();
-      range.collapse(false);
-      const node = range.commonAncestorContainer;
-      const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-      const bq = el ? el.closest("blockquote") : null;
-      if (bq && composeBody.contains(bq)) {
-        range.setStartAfter(bq);
-        range.collapse(true);
+      try {
+        range = lastComposeRange.cloneRange();
+        range.collapse(false);
+        const node = range.commonAncestorContainer;
+        const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        const bq = el ? el.closest("blockquote") : null;
+        if (bq && composeBody.contains(bq)) {
+          range.setStartAfter(bq);
+          range.collapse(true);
+        }
+      } catch (e) {
+        range = null;
       }
-    } else {
+    }
+
+    if (!range) {
       range = document.createRange();
       const children = Array.from(composeBody.children);
       const stopIdx = children.findIndex(
@@ -430,8 +439,11 @@
       }
     }
 
-    selection.removeAllRanges();
-    selection.addRange(range);
+    try {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } catch (e) {}
+    
     return range;
   }
 
@@ -450,15 +462,18 @@
       lastNode = frag.appendChild(node);
     }
 
-    range.insertNode(frag);
-
-    if (lastNode) {
-      const newRange = document.createRange();
-      newRange.setStartAfter(lastNode);
-      newRange.collapse(true);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+    try {
+      range.insertNode(frag);
+      if (lastNode) {
+        const newRange = document.createRange();
+        newRange.setStartAfter(lastNode);
+        newRange.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+    } catch (err) {
+      console.error("[ציטוט ותגובה] שגיאה בהכנסת הציטוט:", err);
     }
   }
 
