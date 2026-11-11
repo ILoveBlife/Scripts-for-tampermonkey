@@ -25,8 +25,8 @@
       z-index: 999999;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
+      justify-content: center;
+      padding: 8px 18px;
       background: rgba(26, 115, 232, 0.95);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -48,13 +48,6 @@
                   background-color 0.15s ease,
                   box-shadow 0.15s ease;
       pointer-events: none;
-    }
-
-    .qr-float-btn svg {
-      width: 15px;
-      height: 15px;
-      fill: currentColor;
-      flex-shrink: 0;
     }
 
     .qr-float-btn.qr-visible {
@@ -95,13 +88,8 @@
     floatBtn = document.createElement("div");
     floatBtn.className = "qr-float-btn";
 
-    const quoteIcon = `
-      <svg viewBox="0 0 24 24">
-        <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
-      </svg>
-    `;
-
-    floatBtn.innerHTML = `${quoteIcon} <span>ציטוט ותגובה</span>`;
+    // כפתור נקי הכולל אך ורק את הטקסט ללא אייקונים נוספים
+    floatBtn.innerHTML = `<span>ציטוט ותגובה</span>`;
 
     floatBtn.addEventListener("mousedown", (e) => {
       e.preventDefault();
@@ -380,7 +368,6 @@
     const bgStyle = "background-color: #f1f3f4; border-radius: 6px;";
     const fontStyle = "font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 13.5px; color: #202124; line-height: 1.6;";
 
-    // הוסרו לחלוטין כל תגיות ה-BR והרווחים המיותרים בסוף הציטוט
     return (
       `<blockquote class="gmail_quote" dir="${rtl ? "rtl" : "ltr"}" style="margin: 0; ${borderStyle} ${bgStyle} ${fontStyle}">` +
       `<div style="margin-bottom: 4px; font-weight: bold; color: #1a73e8;">${escapedSender} כתב/ה:</div>` +
@@ -460,7 +447,6 @@
       range.insertNode(frag);
       if (lastNode) {
         const newRange = document.createRange();
-        // במקום לדחוף את הסמן מעבר לבלוק עם שורה ריקה, נמקם אותו ממש בסוף או מחוץ לבלוק בצורה נקייה
         newRange.setStartAfter(lastNode);
         newRange.collapse(true);
         const selection = window.getSelection();
