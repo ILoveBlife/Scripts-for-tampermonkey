@@ -144,9 +144,7 @@
         lastComposeBody = body;
         lastComposeRange = range.cloneRange();
       }
-    } catch (err) {
-      // Ignore range extraction errors during fast selections
-    }
+    } catch (err) {}
   }
 
   function onSelectionChange() {
@@ -214,7 +212,6 @@
     };
   }
 
-  /* חילוץ שם השולח מהודעת הג'ימייל הנוכחית */
   function getSenderName(messageContainer) {
     if (!messageContainer) return "השולח/ת";
     
@@ -383,13 +380,12 @@
     const bgStyle = "background-color: #f1f3f4; border-radius: 6px;";
     const fontStyle = "font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 13.5px; color: #202124; line-height: 1.6;";
 
-    // הוסר הרווח המיותר מלפני הציטוט ונשאר רק רווח נקי אחד אחריו לכתיבת התגובה
+    // הוסרו לחלוטין כל תגיות ה-BR והרווחים המיותרים בסוף הציטוט
     return (
       `<blockquote class="gmail_quote" dir="${rtl ? "rtl" : "ltr"}" style="margin: 0; ${borderStyle} ${bgStyle} ${fontStyle}">` +
       `<div style="margin-bottom: 4px; font-weight: bold; color: #1a73e8;">${escapedSender} כתב/ה:</div>` +
       `<div>${escapedText}</div>` +
-      "</blockquote>" +
-      "<div><br></div>"
+      "</blockquote>"
     );
   }
 
@@ -464,6 +460,7 @@
       range.insertNode(frag);
       if (lastNode) {
         const newRange = document.createRange();
+        // במקום לדחוף את הסמן מעבר לבלוק עם שורה ריקה, נמקם אותו ממש בסוף או מחוץ לבלוק בצורה נקייה
         newRange.setStartAfter(lastNode);
         newRange.collapse(true);
         const selection = window.getSelection();
