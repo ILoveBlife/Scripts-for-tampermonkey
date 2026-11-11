@@ -3,7 +3,7 @@
 // @name:he      ציטוט למייל
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
-// @description  מסמן טקסט בג'ימייל, מזהה את שם השולח, ומצוטט בעיצוב מקצועי.
+// @description  מסמן טקסט בג'ימייל, מזהה את שם השולח, ומצטט בעיצוב מקצועי.
 // @author       I believe (https://mitmachim.top/user/i-believe)
 // @match        https://mail.google.com/*
 // @updateURL    https://raw.githubusercontent.com/ILoveBlife/Scripts-for-tampermonkey/main/Email-quote.user.js
@@ -218,7 +218,6 @@
   function getSenderName(messageContainer) {
     if (!messageContainer) return "השולח/ת";
     
-    // ניסיון ראשון: חיפוש רכיב השולח הסטנדרטי בג'ימייל
     const senderEl = messageContainer.closest('.adn')?.querySelector('.gD') ||
                      messageContainer.querySelector('.gD') ||
                      messageContainer.closest('[role="region"]')?.querySelector('span[name]');
@@ -227,7 +226,6 @@
       return senderEl.getAttribute('name') || senderEl.textContent.trim();
     }
 
-    // ניסיון שני: גיבוי למחלקות חלופיות בג'ימייל
     const fallbackEl = messageContainer.closest('.adn')?.querySelector('.Hn') ||
                        messageContainer.closest('.iiwrap')?.previousElementSibling?.querySelector('.gD');
     if (fallbackEl) {
@@ -385,8 +383,8 @@
     const bgStyle = "background-color: #f1f3f4; border-radius: 6px;";
     const fontStyle = "font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 13.5px; color: #202124; line-height: 1.6;";
 
+    // הוסר הרווח המיותר מלפני הציטוט ונשאר רק רווח נקי אחד אחריו לכתיבת התגובה
     return (
-      "<div><br></div>" +
       `<blockquote class="gmail_quote" dir="${rtl ? "rtl" : "ltr"}" style="margin: 0; ${borderStyle} ${bgStyle} ${fontStyle}">` +
       `<div style="margin-bottom: 4px; font-weight: bold; color: #1a73e8;">${escapedSender} כתב/ה:</div>` +
       `<div>${escapedText}</div>` +
